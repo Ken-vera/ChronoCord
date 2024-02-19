@@ -1,0 +1,8 @@
+name: ChronoCord
+version: '${project.version}'
+main: me.kenvera.chronocord.ChronoCord
+api-version: '1.19'
+softdepend: [ChronoCore]
+commands:
+  reload:
+    permission: chronocord.reload
