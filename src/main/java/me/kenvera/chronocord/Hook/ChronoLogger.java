@@ -52,6 +52,26 @@ public class ChronoLogger {
         }
     }
 
+    public void logRPG(String playerName, String uuid, String ipAddress, String itemName, String itemId, String itemType, String itemTier, String server, Long... textChannelIds) {
+        for (Long textChannelId : textChannelIds) {
+            MessageEmbed embed = (new EmbedBuilder())
+                    .setTitle("RPG Logger")
+                    .addField("Player Name", playerName, true)
+                    .addField("Ip Address", ipAddress, true)
+                    .addField("UUID", uuid, false)
+                    .addField("Item Name", itemName, false)
+                    .addField("Item ID", itemId, false)
+                    .addField("Item Type", itemType, false)
+                    .addField("Item Tier", itemTier, true)
+                    .addField("Server", server, true)
+                    .setThumbnail("https://minotar.net/cube/" + playerName + "/100.png")
+                    .setFooter(ChronoCord.getInstance().getDataManager().getConfig("config.yml").get().getString("footer-text"),
+                            ChronoCord.getInstance().getDataManager().getConfig("config.yml").get().getString("footer-icon"))
+                    .setTimestamp(Instant.ofEpochSecond(this.longNow())).build();
+            ChronoCord.getInstance().getMessageListener().sendEmbed(textChannelId, embed);
+        }
+    }
+
     private String now() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         ZoneId jakartaZoneId = ZoneId.of("Asia/Jakarta");

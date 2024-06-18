@@ -1,6 +1,5 @@
 package me.kenvera.chronocord;
 
-import me.kenvera.chronocord.Command.Reload;
 import me.kenvera.chronocord.Hook.ChronoLogger;
 import me.kenvera.chronocord.Listener.CommandListener;
 import me.kenvera.chronocord.Listener.MessageListener;
@@ -17,7 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public final class ChronoCord extends JavaPlugin {
     private static ChronoCord instance;
@@ -25,7 +24,7 @@ public final class ChronoCord extends JavaPlugin {
     private DataManager dataManager;
     private MessageListener messageListener;
     private ChronoLogger chronoLogger;
-    private String token;
+    private CompletableFuture<String> token;
 
     @Override
     public void onEnable() {
@@ -70,34 +69,40 @@ public final class ChronoCord extends JavaPlugin {
     public void connect(ListenerAdapter... listener) throws InterruptedException {
         String crazynetwork = getDataManager().getConfig("config.yml").get().getString("guild-id");
         if (crazynetwork != null) {
-            if (token != null) {
-                jda = JDABuilder.createDefault(token)
-                        .enableIntents(
-                                GatewayIntent.DIRECT_MESSAGES,
-                                GatewayIntent.DIRECT_MESSAGE_REACTIONS,
-                                GatewayIntent.DIRECT_MESSAGE_TYPING,
-                                GatewayIntent.GUILD_MESSAGES,
-                                GatewayIntent.GUILD_MESSAGE_TYPING,
-                                GatewayIntent.GUILD_MESSAGE_REACTIONS,
-                                GatewayIntent.GUILD_MEMBERS,
-                                GatewayIntent.GUILD_WEBHOOKS,
-                                GatewayIntent.GUILD_PRESENCES,
-                                GatewayIntent.GUILD_EMOJIS_AND_STICKERS)
-                        .build();
+            token.thenAccept(token -> {
+                if (token != null) {
+                    jda = JDABuilder.createDefault(token)
+                            .enableIntents(
+                                    GatewayIntent.DIRECT_MESSAGES,
+                                    GatewayIntent.DIRECT_MESSAGE_REACTIONS,
+                                    GatewayIntent.DIRECT_MESSAGE_TYPING,
+                                    GatewayIntent.GUILD_MESSAGES,
+                                    GatewayIntent.GUILD_MESSAGE_TYPING,
+                                    GatewayIntent.GUILD_MESSAGE_REACTIONS,
+                                    GatewayIntent.GUILD_MEMBERS,
+                                    GatewayIntent.GUILD_WEBHOOKS,
+                                    GatewayIntent.GUILD_PRESENCES,
+                                    GatewayIntent.GUILD_EMOJIS_AND_STICKERS)
+                            .build();
 
-                jda.awaitReady();
-                jda.addEventListener(listener);
+                    try {
+                        jda.awaitReady();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    jda.addEventListener(listener);
 
-                Guild guild = jda.getGuildById(crazynetwork);
+                    Guild guild = jda.getGuildById(crazynetwork);
 
-                guild.updateCommands().addCommands(
-                        Commands.slash("ip", "CrazyNetwork Ip Address")
-                ).queue();
-                Bukkit.getLogger().info("Successfully connected to Discord instance!");
-            } else {
-                Bukkit.getLogger().severe("Failed gathering token from database!");
-                Bukkit.getPluginManager().disablePlugin(this);
-            }
+                    guild.updateCommands().addCommands(
+                            Commands.slash("ip", "CrazyNetwork Ip Address")
+                    ).queue();
+                    Bukkit.getLogger().info("Successfully connected to Discord instance!");
+                } else {
+                    Bukkit.getLogger().severe("Failed gathering token from database!");
+                    Bukkit.getPluginManager().disablePlugin(this);
+                }
+            });
         } else {
             Bukkit.getLogger().severe("guild-id is empty, check your config file!");
             Bukkit.getPluginManager().disablePlugin(this);
